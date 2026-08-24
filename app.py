@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langgraph_chatboat import chatbot
 
-load_dotenv()
 
 # ============================================================
 # PAGE CONFIGURATION
