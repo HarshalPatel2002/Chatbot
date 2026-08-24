@@ -6,10 +6,8 @@ from langchain_huggingface import ChatHuggingFace,HuggingFaceEndpoint
 from langgraph.checkpoint.memory import InMemorySaver
 
 from langgraph.graph.message import add_messages
-from dotenv import load_dotenv
 import streamlit as st
 
-load_dotenv()
 
 HF_TOKEN = st.secrets["HF_TOKEN"]
 
