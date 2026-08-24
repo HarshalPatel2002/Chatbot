@@ -302,6 +302,8 @@ def inject_custom_css():
             outline: none !important;
             padding: 4px 10px !important;
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            position: relative;
+            overflow: hidden;
         }
 
         div[data-testid="stChatInput"] > div {
@@ -329,6 +331,21 @@ def inject_custom_css():
             color: #FFFFFF !important;
             border: none !important;
             box-shadow: 0 0 12px rgba(56, 189, 248, 0.3) !important;
+            transition: all 0.3s ease !important;
+        }
+
+        /* DISABLED STATE STYLING (NO LOADING ANIMATION) */
+        div[data-testid="stChatInput"] textarea:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            -webkit-text-fill-color: var(--text-muted) !important;
+        }
+
+        div[data-testid="stChatInput"] button:disabled {
+            opacity: 0.4 !important;
+            cursor: not-allowed !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            box-shadow: none !important;
         }
 
         /* CODE BLOCKS */
@@ -378,6 +395,7 @@ def reset_chat():
     thread_id = generate_thread_id()
     st.session_state["thread_id"] = thread_id
     st.session_state["message_history"] = []
+    st.session_state["is_generating"] = False
 
 
 def add_thread(thread_id):
@@ -406,6 +424,9 @@ if "chat_threads" not in st.session_state:
 
 if "chat_titles" not in st.session_state:
     st.session_state["chat_titles"] = {}
+
+if "is_generating" not in st.session_state:
+    st.session_state["is_generating"] = False
 
 # Apply UI CSS Injection
 inject_custom_css()
@@ -463,6 +484,7 @@ if switch_thread_to:
         temp_messages.append({"role": role, "content": msg.content})
 
     st.session_state["message_history"] = temp_messages
+    st.session_state["is_generating"] = False
     st.rerun()
 
 
@@ -511,8 +533,11 @@ else:
                 )
                 st.markdown(message["content"])
 
-# USER CHAT INPUT COMPONENT
-user_input = st.chat_input("Ask anything...")
+# CHAT INPUT DISABLES WHILE GENERATING TO PREVENT RE-SUBMISSION
+user_input = st.chat_input(
+    "Thinking..." if st.session_state["is_generating"] else "Ask anything...",
+    disabled=st.session_state["is_generating"],
+)
 
 if user_input:
     thread_id = st.session_state["thread_id"]
@@ -534,15 +559,12 @@ if user_input:
         {"role": "user", "content": user_input}
     )
 
-    # RERUN TO HIDE WELCOME SCREEN IMMEDIATELY UPON FIRST QUESTION
+    # Lock input immediately and trigger rerun
+    st.session_state["is_generating"] = True
     st.rerun()
 
-# AFTER RERUN: STREAM ASSISTANT RESPONSE IF LAST MESSAGE IS USER
-if (
-    len(st.session_state["message_history"]) > 0
-    and st.session_state["message_history"][-1]["role"] == "user"
-):
-
+# STREAM ASSISTANT RESPONSE ONLY WHEN IN GENERATING STATE
+if st.session_state["is_generating"]:
     latest_user_input = st.session_state["message_history"][-1]["content"]
 
     # Stream & Display Assistant Message from LangGraph
@@ -565,4 +587,7 @@ if (
     st.session_state["message_history"].append(
         {"role": "assistant", "content": ai_message}
     )
+
+    # Unlock input bar once stream is finished
+    st.session_state["is_generating"] = False
     st.rerun()
