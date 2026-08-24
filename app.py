@@ -1,6 +1,5 @@
 import uuid
 import streamlit as st
-from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langgraph_chatboat import chatbot
 
